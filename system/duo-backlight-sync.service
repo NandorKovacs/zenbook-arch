@@ -1,0 +1,33 @@
+[Unit]
+Description=Copy the Zenbook Duo's top screen brightness to the lower screen
+
+[Service]
+ExecStart=/usr/local/bin/duo-backlight-sync
+# Fails until the graphics driver has created the backlight devices.
+Restart=on-failure
+RestartSec=5
+
+# Root is needed only to write the backlight file in /sys, so
+# ProtectKernelTunables, which makes /sys read-only, is left out.
+CapabilityBoundingSet=
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+NoNewPrivileges=yes
+PrivateDevices=yes
+PrivateNetwork=yes
+PrivateTmp=yes
+ProtectClock=yes
+ProtectControlGroups=yes
+ProtectHome=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectSystem=strict
+RestrictAddressFamilies=none
+RestrictNamespaces=yes
+RestrictRealtime=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+
+[Install]
+WantedBy=multi-user.target

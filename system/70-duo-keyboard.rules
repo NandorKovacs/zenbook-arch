@@ -1,0 +1,7 @@
+# Start duo-keyd.service when the hotkey interface (USB interface 4) of the
+# ASUS Zenbook Duo keyboard appears. The symlink is the stable device name the
+# service is bound to.
+#
+# The ID_* properties are set by 60-persistent-hidraw.rules, so this file has
+# to sort after it.
+SUBSYSTEM=="hidraw", ENV{ID_VENDOR_ID}=="0b05", ENV{ID_MODEL_ID}=="1b2c", ENV{ID_USB_INTERFACE_NUM}=="04", SYMLINK+="duo_keyboard_hotkeys", TAG+="systemd", ENV{SYSTEMD_WANTS}+="duo-keyd.service"

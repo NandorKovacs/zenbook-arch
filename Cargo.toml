@@ -1,0 +1,20 @@
+[package]
+name = "zenbook-duo"
+version = "0.1.0"
+edition = "2024"
+description = "Keyboard hotkeys and backlight sync for the ASUS Zenbook Duo (UX8406MA) on Linux"
+
+[[bin]]
+name = "duo-keyd"
+path = "src/keyd/main.rs"
+
+[[bin]]
+name = "duo-backlight-sync"
+path = "src/backlight_sync.rs"
+
+[dependencies]
+libc = "0.2"
+
+[profile.release]
+strip = true
+lto = true

@@ -1,0 +1,40 @@
+[Unit]
+Description=Zenbook Duo keyboard hotkeys
+# Started by 70-duo-keyboard.rules when the keyboard is attached, stopped
+# when it is detached.
+BindsTo=dev-duo_keyboard_hotkeys.device
+After=dev-duo_keyboard_hotkeys.device
+
+[Service]
+ExecStart=/usr/local/bin/duo-keyd
+# systemd opens the two devices and hands them over, so the service itself
+# needs no access to them and can run as a throwaway user.
+OpenFile=/dev/duo_keyboard_hotkeys:hidraw
+OpenFile=/dev/uinput:uinput
+# PrivateDevices= closes the device policy, and that already applies when
+# systemd opens the two files. The service still cannot open any other
+# hidraw device: its /dev has none.
+DeviceAllow=char-hidraw rw
+DeviceAllow=/dev/uinput rw
+DynamicUser=yes
+Restart=on-failure
+RestartSec=5
+
+CapabilityBoundingSet=
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+NoNewPrivileges=yes
+PrivateDevices=yes
+PrivateNetwork=yes
+ProtectClock=yes
+ProtectControlGroups=yes
+ProtectHome=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+RestrictAddressFamilies=none
+RestrictNamespaces=yes
+RestrictRealtime=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
