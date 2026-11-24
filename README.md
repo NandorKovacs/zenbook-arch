@@ -20,6 +20,10 @@ hidraw node and presses the matching key on a virtual keyboard (uinput). The
 keyboard backlight key is handled inside `duo-keyd`, because changing the
 backlight needs the device.
 
+Detached, the keyboard connects over Bluetooth as another device
+(`0b05:1b2d`) that behaves the same way, so `duo-keyd` serves both. Pair it
+once, as usual.
+
 What a key *does* is left to the desktop: bind `XF86MonBrightnessUp` and
 `XF86MonBrightnessDown` like on any laptop.
 
@@ -31,13 +35,15 @@ sudo ./install.sh
 ```
 
 This installs the two programs to `/usr/local/bin`, two units to
-`/etc/systemd/system`, a udev rule and, if there is none yet,
+`/etc/systemd/system`, udev rules and, if there is none yet,
 `/etc/duo-keyd.conf`. `sudo ./install.sh uninstall` removes everything but the
 config.
 
-- `duo-keyd.service` is started by udev when the keyboard is attached and
-  stops when it is detached. systemd opens the two devices and passes them in,
-  so the service runs as a throwaway unprivileged user.
+- `duo-keyd@.service` has one instance per way the keyboard can be connected:
+  `duo-keyd@usb` (docked) and `duo-keyd@bt` (detached). udev starts an
+  instance when the keyboard appears that way, and it stops when the keyboard
+  goes away. systemd opens the two devices and passes them in, so the service
+  runs as a throwaway unprivileged user.
 - `duo-backlight-sync.service` runs from boot, as root, because only root may
   write the backlight files.
 
@@ -65,21 +71,20 @@ Change the mapping, the Fn mode or the start-up backlight level in
 ## Troubleshooting
 
 ```sh
-systemctl status duo-keyd duo-backlight-sync
-journalctl -u duo-keyd -b
+systemctl status 'duo-keyd@*' duo-backlight-sync
+journalctl -u 'duo-keyd@*' -b
 ```
 
 - A hotkey that has no mapping is logged as `unmapped hotkey <code>`.
 - To watch every report, stop the service and run
-  `sudo duo-keyd --verbose` by hand.
+  `sudo duo-keyd --verbose --hidraw /dev/duo_keyboard_usb` (or
+  `/dev/duo_keyboard_bt`) by hand. Over Bluetooth the ordinary keys arrive on
+  the same device, so this prints every keystroke as well.
 
 ## Not verified on hardware yet
 
 - Which of the two enabling commands the keyboard needs (the hid-asus
   handshake or the Fn-mode command); `duo-keyd` sends both.
-- The keyboard over Bluetooth (detached, `0b05:1b2d`). `duo-keyd` only handles
-  the docked keyboard. The volume and mute keys work detached, because the
-  keyboard sends those itself; the other hotkeys are untested there.
 
 ## Development
 

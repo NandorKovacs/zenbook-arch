@@ -28,7 +28,15 @@ install)
 
     install -Dm755 "$bin/duo-keyd" /usr/local/bin/duo-keyd
     install -Dm755 "$bin/duo-backlight-sync" /usr/local/bin/duo-backlight-sync
-    install -Dm644 "$here/system/duo-keyd.service" "$units/duo-keyd.service"
+    # before the keyboard was handled over Bluetooth, there was one
+    # duo-keyd.service
+    systemctl stop duo-keyd.service 2>/dev/null || true
+    rm -f "$units/duo-keyd.service"
+    install -Dm644 "$here/system/duo-keyd@.service" "$units/duo-keyd@.service"
+    for transport in usb bt; do
+        install -Dm644 "$here/system/duo-keyd@$transport.service.d/device.conf" \
+            "$units/duo-keyd@$transport.service.d/device.conf"
+    done
     install -Dm644 "$here/system/duo-backlight-sync.service" "$units/duo-backlight-sync.service"
     install -Dm644 "$here/system/70-duo-keyboard.rules" "$rules"
     # keep an existing configuration
@@ -38,15 +46,20 @@ install)
     systemctl enable duo-backlight-sync.service
     systemctl restart duo-backlight-sync.service
 
-    # Let udev tag the keyboard, which starts duo-keyd if it is attached.
+    # Let udev tag the keyboard, which starts duo-keyd if it is connected.
     # The restart picks up a new binary when it was already running.
     udevadm control --reload
     udevadm trigger --subsystem-match=hidraw
     udevadm settle
-    if [ -e /dev/duo_keyboard_hotkeys ]; then
-        systemctl restart duo-keyd.service
-    else
-        echo "keyboard not attached; duo-keyd starts when it is"
+    connected=no
+    for transport in usb bt; do
+        if [ -e "/dev/duo_keyboard_$transport" ]; then
+            systemctl restart "duo-keyd@$transport.service"
+            connected=yes
+        fi
+    done
+    if [ "$connected" = no ]; then
+        echo "keyboard not connected; duo-keyd starts when it is"
     fi
 
     if systemctl is-active --quiet brightness-sync.service; then
@@ -56,9 +69,14 @@ install)
     ;;
 uninstall)
     systemctl disable --now duo-backlight-sync.service 2>/dev/null || true
-    systemctl stop duo-keyd.service 2>/dev/null || true
+    systemctl stop 'duo-keyd@*.service' duo-keyd.service 2>/dev/null || true
     rm -f /usr/local/bin/duo-keyd /usr/local/bin/duo-backlight-sync
-    rm -f "$units/duo-keyd.service" "$units/duo-backlight-sync.service" "$rules"
+    rm -f "$units/duo-keyd@.service" "$units/duo-keyd.service"
+    for transport in usb bt; do
+        rm -f "$units/duo-keyd@$transport.service.d/device.conf"
+        rmdir "$units/duo-keyd@$transport.service.d" 2>/dev/null || true
+    done
+    rm -f "$units/duo-backlight-sync.service" "$rules"
     systemctl daemon-reload
     udevadm control --reload
     udevadm trigger --subsystem-match=hidraw

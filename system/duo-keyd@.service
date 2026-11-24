@@ -1,15 +1,17 @@
 [Unit]
-Description=Zenbook Duo keyboard hotkeys
-# Started by 70-duo-keyboard.rules when the keyboard is attached, stopped
-# when it is detached.
-BindsTo=dev-duo_keyboard_hotkeys.device
-After=dev-duo_keyboard_hotkeys.device
+Description=Zenbook Duo keyboard hotkeys (%i)
+# One instance per way the keyboard can be connected: usb (docked) and bt
+# (detached). Started by 70-duo-keyboard.rules when the keyboard appears that
+# way, stopped when it goes away.
+BindsTo=dev-duo_keyboard_%i.device
+After=dev-duo_keyboard_%i.device
 
 [Service]
 ExecStart=/usr/local/bin/duo-keyd
 # systemd opens the two devices and hands them over, so the service itself
-# needs no access to them and can run as a throwaway user.
-OpenFile=/dev/duo_keyboard_hotkeys:hidraw
+# needs no access to them and can run as a throwaway user. The keyboard is
+# /dev/duo_keyboard_%i; OpenFile= does not expand %i, so each instance names
+# it in its drop-in (duo-keyd@%i.service.d/device.conf).
 OpenFile=/dev/uinput:uinput
 # PrivateDevices= closes the device policy, and that already applies when
 # systemd opens the two files. The service still cannot open any other

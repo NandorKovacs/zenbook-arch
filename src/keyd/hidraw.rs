@@ -1,7 +1,9 @@
-//! The keyboard's hotkey interface (USB interface 4), through its hidraw node.
+//! The keyboard's hotkey interface, through its hidraw node.
 //!
 //! The interface has one input report, `5a <code> 00 00 00 00`, and one
-//! 16-byte feature report with the same id that takes commands.
+//! 16-byte feature report with the same id that takes commands. Docked, it is
+//! USB interface 4. Over Bluetooth it shares a HID device, and so a hidraw
+//! node, with the ordinary keys; their reports have other ids.
 
 use std::fs::File;
 use std::io::{self, Read};

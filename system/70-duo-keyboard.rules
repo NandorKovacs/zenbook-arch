@@ -1,7 +1,13 @@
-# Start duo-keyd.service when the hotkey interface (USB interface 4) of the
-# ASUS Zenbook Duo keyboard appears. The symlink is the stable device name the
-# service is bound to.
+# Start duo-keyd when the hotkey interface of the ASUS Zenbook Duo keyboard
+# appears: one instance of duo-keyd@.service per way the keyboard can be
+# connected. The symlink is the stable device name the instance is bound to.
+
+# Docked (USB): the hotkeys are on interface 4.
 #
 # The ID_* properties are set by 60-persistent-hidraw.rules, so this file has
 # to sort after it.
-SUBSYSTEM=="hidraw", ENV{ID_VENDOR_ID}=="0b05", ENV{ID_MODEL_ID}=="1b2c", ENV{ID_USB_INTERFACE_NUM}=="04", SYMLINK+="duo_keyboard_hotkeys", TAG+="systemd", ENV{SYSTEMD_WANTS}+="duo-keyd.service"
+SUBSYSTEM=="hidraw", ENV{ID_VENDOR_ID}=="0b05", ENV{ID_MODEL_ID}=="1b2c", ENV{ID_USB_INTERFACE_NUM}=="04", SYMLINK+="duo_keyboard_usb", TAG+="systemd", ENV{SYSTEMD_WANTS}+="duo-keyd@usb.service"
+
+# Detached (Bluetooth): the keyboard is two HID devices with the same id. The
+# touchpad is taken by hid-multitouch; the other one carries the hotkeys.
+SUBSYSTEM=="hidraw", KERNELS=="0005:0B05:1B2D.*", DRIVERS=="hid-generic", SYMLINK+="duo_keyboard_bt", TAG+="systemd", ENV{SYSTEMD_WANTS}+="duo-keyd@bt.service"

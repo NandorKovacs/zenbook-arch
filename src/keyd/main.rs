@@ -8,7 +8,9 @@
 //! sees them like the keys of any laptop. The keyboard backlight key is
 //! handled here, because changing the backlight needs the device.
 //!
-//! It runs until the keyboard is detached; udev starts it again on attach.
+//! The keyboard is a different device docked (USB) and detached (Bluetooth),
+//! with the same hotkey reports. duo-keyd serves the one it is given and runs
+//! until that device goes away; udev starts it again when it comes back.
 
 mod config;
 mod fds;
@@ -96,12 +98,18 @@ fn run(args: &Args) -> Result<(), String> {
     let uinput = open(&mut passed, "uinput", &args.uinput)?;
 
     // Neither failure is fatal by itself: which of the two the keyboard needs
-    // may depend on its firmware.
-    if let Err(e) = keyboard.handshake() {
+    // may depend on its firmware. When both fail the keyboard took no command
+    // at all and would send no hotkeys, so give up and let systemd try again.
+    let handshake = keyboard.handshake();
+    if let Err(e) = &handshake {
         eprintln!("handshake failed: {e}");
     }
-    if let Err(e) = keyboard.set_hotkeys_first(config.hotkeys_first) {
+    let fn_mode = keyboard.set_hotkeys_first(config.hotkeys_first);
+    if let Err(e) = &fn_mode {
         eprintln!("setting the Fn mode failed: {e}");
+    }
+    if handshake.is_err() && fn_mode.is_err() {
+        return Err("the keyboard accepts no commands".into());
     }
     if let Some(level) = config.backlight_level
         && let Err(e) = keyboard.set_backlight(level)
